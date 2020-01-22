@@ -24,7 +24,7 @@ class TwoLayerNet(nn.Module):
 
 
 if __name__ == '__main__':
-    device = 'cpu'
+    device = 'cuda'
     metasense = MetaSenseDataset(device)
     dataloader = DataLoader(metasense, batch_size = int(len(metasense)/20),
                             shuffle = False, drop_last = True)
