@@ -6,6 +6,20 @@ import pycuda.driver as cuda
 import time
 cuda.init()
 
+class OneLayerNet(nn.Module):
+    def __init__(self, d_in, H, d_out):
+        super(TwoLayerNet, self).__init__()
+        self.l1 = nn.Linear(d_in, H)
+        self.l2 = nn.Linear(H, H)
+        self.l3 = nn.Linear(H, d_out)
+
+    def forward(self, x):
+        out = F.relu(self.l1(x))
+        out = F.relu(self.l2(out))
+        out = F.relu(self.l3(out))
+
+        return out
+
 class TwoLayerNet(nn.Module):
     def __init__(self, d_in, H, d_out):
         super(TwoLayerNet, self).__init__()
@@ -21,6 +35,25 @@ class TwoLayerNet(nn.Module):
         out = F.relu(self.l4(out))
 
         return out
+
+class ThreeLayerNet(nn.Module):
+    def __init__(self, d_in, H, d_out):
+        super(TwoLayerNet, self).__init__()
+        self.l1 = nn.Linear(d_in, H)
+        self.l2 = nn.Linear(H, H)
+        self.l3 = nn.Linear(H, H)
+        self.l4 = nn.Linear(H, H)
+        self.l5 = nn.Linear(H, d_out)
+
+    def forward(self, x):
+        out = F.relu(self.l1(x))
+        out = F.relu(self.l2(out))
+        out = F.relu(self.l3(out))
+        out = F.relu(self.l4(out))
+        out = F.relu(self.l5(out))
+
+        return out
+
 
 
 if __name__ == '__main__':
