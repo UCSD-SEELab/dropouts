@@ -8,7 +8,7 @@ cuda.init()
 
 class OneLayerNet(nn.Module):
     def __init__(self, d_in, H, d_out):
-        super(TwoLayerNet, self).__init__()
+        super(OneLayerNet, self).__init__()
         self.l1 = nn.Linear(d_in, H)
         self.l2 = nn.Linear(H, H)
         self.l3 = nn.Linear(H, d_out)
@@ -38,7 +38,7 @@ class TwoLayerNet(nn.Module):
 
 class ThreeLayerNet(nn.Module):
     def __init__(self, d_in, H, d_out):
-        super(TwoLayerNet, self).__init__()
+        super(ThreeLayerNet, self).__init__()
         self.l1 = nn.Linear(d_in, H)
         self.l2 = nn.Linear(H, H)
         self.l3 = nn.Linear(H, H)
