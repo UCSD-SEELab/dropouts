@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import pycuda.driver as cuda
 cuda.init()
-from models import TwoLayerNet
+from models import OneLayerNet, TwoLayerNet, ThreeLayerNet
 from torch.utils.tensorboard import SummaryWriter
 import time
 import pandas as pd
@@ -31,7 +31,7 @@ class trainer:
 
     def fit(self, model_params, dataset, epochs, k=10, nbatches=10, DEBUG=False):
         batchsize = int(len(dataset)/nbatches)
-        dataloader = DataLoader(dataset, batch_size = batchsize, shuffle = False,
+        dataloader = DataLoader(dataset, batch_size = batchsize, shuffle = True,
                                 drop_last = True)
         self.data_table = []
         final_test_loss = []
@@ -115,11 +115,11 @@ class trainer:
             self.data_table.append(fold_test_data)
 
         cols = ['label', 'data', 'fold'] + list(range(epochs))
-        self.data_table = pd.DataFrame(self.data_table)
+        self.data_table = pd.DataFrame(self.data_table, columns=cols)
         print("Final loss on test data: ", np.mean(final_test_loss))
 
     def logger(self):
-        fname = self.label + '_readings.csv'
+        fname = "./readings/" + self.label + '_readings.csv'
         self.data_table.to_csv(fname, index=False)
 
 if __name__ == '__main__':
@@ -127,6 +127,7 @@ if __name__ == '__main__':
     device = 'cuda'
     metasense = MetaSenseDataset(device)
     
+    '''
     ########### One Layer ############
     print("------------------ One Layer Net ------------------")
     modelTrainer = trainer(OneLayerNet, nn.L1Loss, optim.Adam, device, writer, "1-layer")
@@ -143,9 +144,36 @@ if __name__ == '__main__':
 
     ########### Three Layer ############
     print("------------------ Three Layer Net ------------------")
-    modelTrainer = trainer(ThreeLayerNet, nn.L1Loss, optim.Adam, device, writer, "2-layer")
+    modelTrainer = trainer(ThreeLayerNet, nn.L1Loss, optim.Adam, device, writer, "3-layer")
     modelTrainer.fit((6, 200, 1), metasense, 50)
     modelTrainer.logger()
     print("===================================================")
+    '''
+
+    for rate in [0, 0.1, 0.2, 0.3, 0.4, 0.5]:
+        ########### One Layer ############
+        print("------------------ One Layer Net dropout ------------------")
+        modelTrainer = trainer(OneLayerNet, nn.L1Loss, optim.Adam, device,
+                               writer, "1-layer-shuffled-" + str(rate))
+        modelTrainer.fit((6, 200, 1, rate), metasense, 50)
+        modelTrainer.logger()
+        print("===================================================")
+
+        ########### Two Layer ############
+        print("------------------ Two Layer Net dropout ------------------")
+        modelTrainer = trainer(TwoLayerNet, nn.L1Loss, optim.Adam, device,
+                               writer, "2-layer-shuffled-" + str(rate))
+        modelTrainer.fit((6, 200, 1, rate), metasense, 50)
+        modelTrainer.logger()
+        print("===================================================")
+
+        ########### Three Layer ############
+        print("------------------ Three Layer Net ------------------")
+        modelTrainer = trainer(ThreeLayerNet, nn.L1Loss, optim.Adam, device,
+                               writer, "3-layer-shuffled-" + str(rate))
+        modelTrainer.fit((6, 200, 1, rate), metasense, 50)
+        modelTrainer.logger()
+        print("===================================================")
+
 
 

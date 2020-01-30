@@ -7,10 +7,11 @@ import time
 cuda.init()
 
 class OneLayerNet(nn.Module):
-    def __init__(self, d_in, H, d_out):
-        super(TwoLayerNet, self).__init__()
+    def __init__(self, d_in, H, d_out, drop_p=0):
+        super(OneLayerNet, self).__init__()
         self.l1 = nn.Linear(d_in, H)
         self.l2 = nn.Linear(H, H)
+        self.d1 = nn.Dropout(p=drop_p)
         self.l3 = nn.Linear(H, d_out)
 
     def forward(self, x):
@@ -21,11 +22,13 @@ class OneLayerNet(nn.Module):
         return out
 
 class TwoLayerNet(nn.Module):
-    def __init__(self, d_in, H, d_out):
+    def __init__(self, d_in, H, d_out, drop_p=0):
         super(TwoLayerNet, self).__init__()
         self.l1 = nn.Linear(d_in, H)
         self.l2 = nn.Linear(H, H)
+        self.d1 = nn.Dropout(p=drop_p)
         self.l3 = nn.Linear(H, H)
+        self.d2 = nn.Dropout(p=drop_p)
         self.l4 = nn.Linear(H, d_out)
 
     def forward(self, x):
@@ -37,19 +40,25 @@ class TwoLayerNet(nn.Module):
         return out
 
 class ThreeLayerNet(nn.Module):
-    def __init__(self, d_in, H, d_out):
-        super(TwoLayerNet, self).__init__()
+    def __init__(self, d_in, H, d_out, drop_p=0):
+        super(ThreeLayerNet, self).__init__()
         self.l1 = nn.Linear(d_in, H)
         self.l2 = nn.Linear(H, H)
+        self.d1 = nn.Dropout(p=drop_p)
         self.l3 = nn.Linear(H, H)
+        self.d2 = nn.Dropout(p=drop_p)
         self.l4 = nn.Linear(H, H)
+        self.d3 = nn.Dropout(p=drop_p)
         self.l5 = nn.Linear(H, d_out)
 
     def forward(self, x):
         out = F.relu(self.l1(x))
         out = F.relu(self.l2(out))
+        out = F.relu(self.d1(out))
         out = F.relu(self.l3(out))
+        out = F.relu(self.d2(out))
         out = F.relu(self.l4(out))
+        out = F.relu(self.d3(out))
         out = F.relu(self.l5(out))
 
         return out
