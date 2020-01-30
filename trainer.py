@@ -48,6 +48,9 @@ class trainer:
             fold_test_data = [self.label, "test", nfold]
 
             net = self.model(*model_params)
+            if torch.cuda.device_count() > 1:
+                print("Let's use", torch.cuda.device_count(), "GPUs!")
+                net = nn.DataParallel(net)
             net.to(self.device)
 
             criterion = self.lossfn()
