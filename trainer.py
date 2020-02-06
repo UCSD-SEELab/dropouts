@@ -2,8 +2,11 @@ from loader import *
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import pycuda.driver as cuda
-cuda.init()
+
+if torch.cuda.is_available():
+    import pycuda.driver as cuda
+    cuda.init()
+
 from models import OneLayerNet, TwoLayerNet, ThreeLayerNet
 from torch.utils.tensorboard import SummaryWriter
 import time
@@ -28,6 +31,51 @@ class trainer:
     def splitData(self, dataloader, test_idx, val_idx):
         
         return (val, test, train)
+
+    def simpleFit(self, model_params, dataset, epochs, batchsize=128, DEBUG=False):
+        train_split = = int(len(dataset) *0.80)
+        val_split = int(len(dataset) *0.10)
+        test_split = len(dataset) - train_split - val_split
+        train, val, test = torch.utils.data.random_split(dataset, 
+                                                     [train_split, val_split, test_split])
+
+        train_loader = DataLoader(train, batch_size = batchsize, shuffle = True,
+                                drop_last = True)
+
+        val_loader = DataLoader(val)
+        test_loader = DataLoader(test)
+
+        self.data_table = []
+
+        for lr in lrs:
+            net = self.model(*model_params)
+
+            if torch.cuda.device_count() > 1:
+                print("Let's use", torch.cuda.device_count(), "GPUs!")
+                net = nn.DataParallel(net)
+
+            net.to(self.device)
+
+            criterion = self.lossfn()
+            optimizer = self.optimizer(net.parameters(), lr = lr)
+
+            for epoch in range(epochs):
+                running_loss = 0
+                net.train()
+
+                for i, data in enumerate(train_loader):
+                    inputs, labels = data[0], data[1]
+                    optimizer.zero_grad()
+                    outputs = net(inputs)
+                    loss = criterion(outputs, labels)
+                    running_loss += loss.item()
+                    loss.backward()
+                    optimizer.step()
+
+                running_loss /= i
+                print("Loss at epoch {}: {}".format(epoch, running_loss))
+
+
 
     def fit(self, model_params, dataset, epochs, k=10, nbatches=10, DEBUG=False):
         batchsize = int(len(dataset)/nbatches)
@@ -127,9 +175,9 @@ class trainer:
 
 if __name__ == '__main__':
     writer = SummaryWriter('runs/metasense_experiment_1')
-    device = 'cuda'
+    device = 'cpu'
     metasense = MetaSenseDataset(device)
-    
+        
     '''
     ########### One Layer ############
     print("------------------ One Layer Net ------------------")

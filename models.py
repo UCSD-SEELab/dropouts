@@ -1,10 +1,8 @@
-from test import *
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import pycuda.driver as cuda
 import time
-cuda.init()
+
 
 class OneLayerNet(nn.Module):
     def __init__(self, d_in, H, d_out, drop_p=0):
@@ -66,6 +64,10 @@ class ThreeLayerNet(nn.Module):
 
 
 if __name__ == '__main__':
+    from loader import *
+    import pycuda.driver as cuda
+    cuda.init()
+
     device = 'cuda'
     metasense = MetaSenseDataset(device)
     dataloader = DataLoader(metasense, batch_size = int(len(metasense)/20),
