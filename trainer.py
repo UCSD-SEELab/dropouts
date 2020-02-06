@@ -32,8 +32,8 @@ class trainer:
         
         return (val, test, train)
 
-    def simpleFit(self, model_params, dataset, epochs, batchsize=128, DEBUG=False):
-        train_split = = int(len(dataset) *0.80)
+    def simpleFit(self, model_params, dataset, epochs, lrs, batchsize=128, DEBUG=False):
+        train_split = int(len(dataset) *0.80)
         val_split = int(len(dataset) *0.10)
         test_split = len(dataset) - train_split - val_split
         train, val, test = torch.utils.data.random_split(dataset, 
@@ -177,6 +177,15 @@ if __name__ == '__main__':
     writer = SummaryWriter('runs/metasense_experiment_1')
     device = 'cpu'
     metasense = MetaSenseDataset(device)
+
+    ########### One Layer ############
+    print("------------------ One Layer Net ------------------")
+    modelTrainer = trainer(OneLayerNet, nn.L1Loss, optim.SGD, device, writer, "1-layer")
+    modelTrainer.simpleFit((6, 200, 1, 0), metasense, 50, [0.005, 0.05, 0.0005])
+    #modelTrainer.logger()
+    print("===================================================")
+
+
         
     '''
     ########### One Layer ############
@@ -199,7 +208,6 @@ if __name__ == '__main__':
     modelTrainer.fit((6, 200, 1), metasense, 50)
     modelTrainer.logger()
     print("===================================================")
-    '''
 
     for rate in [0, 0.1, 0.2, 0.3, 0.4, 0.5]:
         ########### One Layer ############
@@ -225,6 +233,4 @@ if __name__ == '__main__':
         modelTrainer.fit((6, 200, 1, rate), metasense, 50)
         modelTrainer.logger()
         print("===================================================")
-
-
-
+    '''
