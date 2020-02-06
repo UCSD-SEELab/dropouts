@@ -32,7 +32,7 @@ class trainer:
         
         return (val, test, train)
 
-    def simpleFit(self, model_params, dataset, epochs, lrs, batchsize=128, DEBUG=False):
+    def simpleFit(self, model_params, dataset, epochs, lr, batchsize=128, DEBUG=False):
         train_split = int(len(dataset) *0.80)
         val_split = int(len(dataset) *0.10)
         test_split = len(dataset) - train_split - val_split
@@ -46,35 +46,71 @@ class trainer:
         test_loader = DataLoader(test)
 
         self.data_table = []
+        self.final_loss_vals=[]
 
-        for lr in lrs:
-            net = self.model(*model_params)
+        net = self.model(*model_params)
 
-            if torch.cuda.device_count() > 1:
-                print("Let's use", torch.cuda.device_count(), "GPUs!")
-                net = nn.DataParallel(net)
+        if torch.cuda.device_count() > 1:
+            print("Let's use", torch.cuda.device_count(), "GPUs!")
+            net = nn.DataParallel(net)
 
-            net.to(self.device)
+        net.to(self.device)
 
-            criterion = self.lossfn()
-            optimizer = self.optimizer(net.parameters(), lr = lr)
+        criterion = self.lossfn()
+        optimizer = self.optimizer(net.parameters(), lr = lr)
 
-            for epoch in range(epochs):
-                running_loss = 0
-                net.train()
+        best_loss = float("inf")
+        best_model = net.state_dict()
 
-                for i, data in enumerate(train_loader):
-                    inputs, labels = data[0], data[1]
-                    optimizer.zero_grad()
-                    outputs = net(inputs)
-                    loss = criterion(outputs, labels)
-                    running_loss += loss.item()
-                    loss.backward()
-                    optimizer.step()
+        fold_train_data = [self.label, "train", lr]
+        fold_val_data = [self.label, "validation", lr]
+        fold_test_data = [self.label, "test", lr]
 
-                running_loss /= i
-                print("Loss at epoch {}: {}".format(epoch, running_loss))
+        for epoch in range(epochs):
+            running_loss = 0
+            net.train()
 
+            for i, data in enumerate(train_loader):
+                inputs, labels = data[0], data[1]
+                optimizer.zero_grad()
+                outputs = net(inputs)
+                loss = criterion(outputs, labels)
+                running_loss += loss.item()
+                loss.backward()
+                optimizer.step()
+
+            running_loss /= (i + 1)
+            fold_train_data.append(running_loss)
+            print("Loss at epoch {}: {}".format(epoch, running_loss))
+
+            with torch.no_grad():
+                val_loss = 0
+                for i, data in enumerate(val_loader):
+                    ip, labels = data[0], data[1]
+                    preds = net(data)
+                    val_loss += criterion(preds, labels).item()
+                val_loss /= (i + 1)
+                fold_val_data.append(val_loss)
+
+                if val_loss < best_loss:
+                    best_loss = val_loss
+                    best_model = net.state_dict()
+
+        net.load_state_dict(best_model)
+        net.eval()
+        test_loss = 0
+        for i, data in enumerate(test_loader):
+            ip, labels = data[0], data[1]
+            preds = net(data)
+            test_loss += criterion(preds, labels).item()
+        test_loss /= (i+1)
+        fold_test_data.append(test_loss)
+
+        self.data_table.append(fold_train_data)
+        self.data_table.append(fold_val_data)
+        self.data_table.append(fold_test_data)
+        cols = ['label', 'data', 'lr'] + list(range(epochs))
+        self.data_table = pd.DataFrame(self.data_table, columns=cols)
 
 
     def fit(self, model_params, dataset, epochs, k=10, nbatches=10, DEBUG=False):
@@ -170,7 +206,7 @@ class trainer:
         print("Final loss on test data: ", np.mean(final_test_loss))
 
     def logger(self):
-        fname = "./readings/" + self.label + '_readings.csv'
+        fname = "./readings/round2/" + self.label + '_readings.csv'
         self.data_table.to_csv(fname, index=False)
 
 if __name__ == '__main__':
@@ -179,11 +215,14 @@ if __name__ == '__main__':
     metasense = MetaSenseDataset(device)
 
     ########### One Layer ############
-    print("------------------ One Layer Net ------------------")
-    modelTrainer = trainer(OneLayerNet, nn.L1Loss, optim.SGD, device, writer, "1-layer")
-    modelTrainer.simpleFit((6, 200, 1, 0), metasense, 50, [0.005, 0.05, 0.0005])
-    #modelTrainer.logger()
-    print("===================================================")
+    for lr in range([0.05, 0.005, 0.005]):
+        for dp in range([0, 0.1, 0.2, 0.3, 0.4, 0.5]):
+            print("---------------- One Layer Net with lr {} ----------------".format(lr))
+            modelTrainer = trainer(OneLayerNet, nn.L1Loss, optim.Adam, device, writer,
+                                   "1-layer-" + str(lr) + '-' + str(dp))
+            modelTrainer.simpleFit((6, 200, 1, dp), metasense, 50, lr)
+            modelTrainer.logger()
+            print("===================================================")
 
 
         
