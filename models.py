@@ -61,6 +61,33 @@ class ThreeLayerNet(nn.Module):
 
         return out
 
+class FourLayerNet(nn.Module):
+    def __init__(self, d_in, H, d_out, drop_p=0):
+        super(FourLayerNet, self).__init__()
+        self.l1 = nn.Linear(d_in, H)
+        self.l2 = nn.Linear(H, H)
+        self.d1 = nn.Dropout(p=drop_p)
+        self.l3 = nn.Linear(H, H)
+        self.d2 = nn.Dropout(p=drop_p)
+        self.l4 = nn.Linear(H, H)
+        self.d3 = nn.Dropout(p=drop_p)
+        self.l5 = nn.Linear(H, H)
+        self.d4 = nn.Dropout(p=drop_p)
+        self.l6 = nn.Linear(H, d_out)
+
+    def forward(self, x):
+        out = F.relu(self.l1(x))
+        out = F.relu(self.l2(out))
+        out = F.relu(self.d1(out))
+        out = F.relu(self.l3(out))
+        out = F.relu(self.d2(out))
+        out = F.relu(self.l4(out))
+        out = F.relu(self.d3(out))
+        out = F.relu(self.l5(out))
+
+        return out
+
+
 
 
 if __name__ == '__main__':

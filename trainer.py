@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 if torch.cuda.is_available():
+    print("here")
     import pycuda.driver as cuda
     cuda.init()
 
@@ -50,11 +51,14 @@ class trainer:
 
         net = self.model(*model_params)
 
+    
+        '''
         if torch.cuda.device_count() > 1:
             print("Let's use", torch.cuda.device_count(), "GPUs!")
             net = nn.DataParallel(net)
-
+        '''
         net.to(self.device)
+
 
         criterion = self.lossfn()
         optimizer = self.optimizer(net.parameters(), lr = lr)
@@ -65,6 +69,8 @@ class trainer:
         fold_train_data = [self.label, "train", lr]
         fold_val_data = [self.label, "validation", lr]
         fold_test_data = [self.label, "test", lr]
+        count = 0
+        val_loss_arr = []
 
         for epoch in range(epochs):
             running_loss = 0
@@ -81,29 +87,41 @@ class trainer:
 
             running_loss /= (i + 1)
             fold_train_data.append(running_loss)
-            print("Loss at epoch {}: {}".format(epoch, running_loss))
+            #print("Loss at epoch {}: {}".format(epoch, running_loss))
 
             with torch.no_grad():
                 val_loss = 0
                 for i, data in enumerate(val_loader):
                     ip, labels = data[0], data[1]
-                    preds = net(data)
+                    preds = net(ip)
                     val_loss += criterion(preds, labels).item()
                 val_loss /= (i + 1)
+                val_loss_arr.append(val_loss)
+                print("Validation Loss at epoch {}: {}".format(epoch, val_loss))
                 fold_val_data.append(val_loss)
 
                 if val_loss < best_loss:
                     best_loss = val_loss
                     best_model = net.state_dict()
+                
+                if(epoch>0 and val_loss_arr[-2]<val_loss_arr[-1]):
+                    count +=1
+                    if(count==5):
+                        stop_epoch = epoch
+                        print("Training stopped after {}".format(stop_epoch))
+                        break
+                else:
+                    count = 0
 
         net.load_state_dict(best_model)
         net.eval()
         test_loss = 0
         for i, data in enumerate(test_loader):
             ip, labels = data[0], data[1]
-            preds = net(data)
+            preds = net(ip)
             test_loss += criterion(preds, labels).item()
         test_loss /= (i+1)
+        print("Test loss for lr of {}: {}".format(lr, test_loss))
         fold_test_data.append(test_loss)
 
         self.data_table.append(fold_train_data)
@@ -211,14 +229,14 @@ class trainer:
 
 if __name__ == '__main__':
     writer = SummaryWriter('runs/metasense_experiment_1')
-    device = 'cpu'
+    device = 'cuda'
     metasense = MetaSenseDataset(device)
 
     ########### One Layer ############
-    for lr in range([0.05, 0.005, 0.005]):
-        for dp in range([0, 0.1, 0.2, 0.3, 0.4, 0.5]):
-            print("---------------- One Layer Net with lr {} ----------------".format(lr))
-            modelTrainer = trainer(OneLayerNet, nn.L1Loss, optim.Adam, device, writer,
+    for lr in [0.005]:
+        for dp in [0, 0.1, 0.2, 0.3, 0.4, 0.5]:
+            print("---------------- Two Layer Net with lr {} dropout {} ----------------".format(lr, dp))
+            modelTrainer = trainer(TwoLayerNet, nn.L1Loss, optim.Adam, device, writer,
                                    "1-layer-" + str(lr) + '-' + str(dp))
             modelTrainer.simpleFit((6, 200, 1, dp), metasense, 50, lr)
             modelTrainer.logger()
