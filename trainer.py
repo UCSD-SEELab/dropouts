@@ -221,7 +221,7 @@ class trainer:
         print("Final loss on test data: ", np.mean(final_test_loss))
 
     def logger(self):
-        fname = "./readings/round2/" + self.label + '_readings.csv'
+        fname = "./readings/round3/" + self.label + '_readings.csv'
         self.data_table.to_csv(fname, index=False)
 
 if __name__ == '__main__':
@@ -230,26 +230,26 @@ if __name__ == '__main__':
     metasense = MetaSenseDataset(device)
 
     ########### One Layer ############
-    for lr in [0.005]:
+    for lr in [0.001]:
         for dp in [0, 0.1, 0.2, 0.3, 0.4, 0.5]:
             print("---------------- One Layer Net with lr {} dropout {} ----------------".format(lr, dp))
             modelTrainer = trainer(OneLayerNet, nn.L1Loss, optim.Adam, device, writer,
                                    "1-layer-" + str(lr) + '-' + str(dp))
-            modelTrainer.simpleFit((6, 100, 1, dp), metasense, 50, lr)
+            modelTrainer.simpleFit((6, 200, 1, dp), metasense, 50, lr)
             modelTrainer.logger()
             print("===================================================")
             
             print("---------------- Two Layer Net with lr {} dropout {} ----------------".format(lr, dp))
             modelTrainer = trainer(TwoLayerNet, nn.L1Loss, optim.Adam, device, writer,
                                    "2-layer-" + str(lr) + '-' + str(dp))
-            modelTrainer.simpleFit((6, 100, 1, dp), metasense, 50, lr)
+            modelTrainer.simpleFit((6, 200, 1, dp), metasense, 50, lr)
             modelTrainer.logger()
             print("===================================================")
             
             print("---------------- Three Layer Net with lr {} dropout {} ----------------".format(lr, dp))
             modelTrainer = trainer(ThreeLayerNet, nn.L1Loss, optim.Adam, device, writer,
                                    "3-layer-" + str(lr) + '-' + str(dp))
-            modelTrainer.simpleFit((6, 100, 1, dp), metasense, 50, lr)
+            modelTrainer.simpleFit((6, 200, 1, dp), metasense, 50, lr)
             modelTrainer.logger()
             print("===================================================")
 
