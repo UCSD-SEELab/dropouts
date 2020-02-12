@@ -8,7 +8,7 @@ if torch.cuda.is_available():
     import pycuda.driver as cuda
     cuda.init()
 
-from models import OneLayerNet, TwoLayerNet, ThreeLayerNet
+from models import OneLayerNet, TwoLayerNet, ThreeLayerNet, FourLayerNet
 from torch.utils.tensorboard import SummaryWriter
 import time
 import pandas as pd
@@ -50,15 +50,12 @@ class trainer:
         self.final_loss_vals=[]
 
         net = self.model(*model_params)
-
-    
         '''
         if torch.cuda.device_count() > 1:
             print("Let's use", torch.cuda.device_count(), "GPUs!")
             net = nn.DataParallel(net)
         '''
         net.to(self.device)
-
 
         criterion = self.lossfn()
         optimizer = self.optimizer(net.parameters(), lr = lr)
@@ -235,10 +232,31 @@ if __name__ == '__main__':
     ########### One Layer ############
     for lr in [0.005]:
         for dp in [0, 0.1, 0.2, 0.3, 0.4, 0.5]:
+            print("---------------- One Layer Net with lr {} dropout {} ----------------".format(lr, dp))
+            modelTrainer = trainer(OneLayerNet, nn.L1Loss, optim.Adam, device, writer,
+                                   "1-layer-" + str(lr) + '-' + str(dp))
+            modelTrainer.simpleFit((6, 100, 1, dp), metasense, 50, lr)
+            modelTrainer.logger()
+            print("===================================================")
+            
             print("---------------- Two Layer Net with lr {} dropout {} ----------------".format(lr, dp))
             modelTrainer = trainer(TwoLayerNet, nn.L1Loss, optim.Adam, device, writer,
-                                   "1-layer-" + str(lr) + '-' + str(dp))
-            modelTrainer.simpleFit((6, 200, 1, dp), metasense, 50, lr)
+                                   "2-layer-" + str(lr) + '-' + str(dp))
+            modelTrainer.simpleFit((6, 100, 1, dp), metasense, 50, lr)
+            modelTrainer.logger()
+            print("===================================================")
+            
+            print("---------------- Three Layer Net with lr {} dropout {} ----------------".format(lr, dp))
+            modelTrainer = trainer(ThreeLayerNet, nn.L1Loss, optim.Adam, device, writer,
+                                   "3-layer-" + str(lr) + '-' + str(dp))
+            modelTrainer.simpleFit((6, 100, 1, dp), metasense, 50, lr)
+            modelTrainer.logger()
+            print("===================================================")
+
+            print("---------------- Four Layer Net with lr {} dropout {} ----------------".format(lr, dp))
+            modelTrainer = trainer(FourLayerNet, nn.L1Loss, optim.Adam, device, writer,
+                                   "4-layer-" + str(lr) + '-' + str(dp))
+            modelTrainer.simpleFit((6, 100, 1, dp), metasense, 50, lr)
             modelTrainer.logger()
             print("===================================================")
 

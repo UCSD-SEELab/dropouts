@@ -84,6 +84,8 @@ class FourLayerNet(nn.Module):
         out = F.relu(self.l4(out))
         out = F.relu(self.d3(out))
         out = F.relu(self.l5(out))
+        out = F.relu(self.d4(out))
+        out = F.relu(self.l6(out))
 
         return out
 
